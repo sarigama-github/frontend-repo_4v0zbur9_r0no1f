@@ -12,6 +12,7 @@ import {
   Send,
   CheckCircle2,
 } from 'lucide-react'
+import NavBar from './components/NavBar'
 
 const THEMES = {
   ocean: {
@@ -191,14 +192,17 @@ export default function App() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <ThemeSelector theme={theme} setTheme={setTheme} />
-            <Link
-              to="/test"
-              className="rounded-md border border-black/5 bg-white/70 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur hover:bg-white/90"
-            >
-              Check backend
-            </Link>
+          <div className="flex items-center gap-4">
+            <NavBar />
+            <div className="flex items-center gap-2">
+              <ThemeSelector theme={theme} setTheme={setTheme} />
+              <Link
+                to="/test"
+                className="rounded-md border border-black/5 bg-white/70 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur hover:bg-white/90"
+              >
+                Check backend
+              </Link>
+            </div>
           </div>
         </div>
       </header>
