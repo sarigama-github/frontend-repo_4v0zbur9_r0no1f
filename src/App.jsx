@@ -8,8 +8,6 @@ import {
   KanbanSquare,
   Factory,
   Stethoscope,
-  Sun,
-  Moon,
   Palette,
   Send,
   CheckCircle2,
@@ -110,6 +108,12 @@ function useTheme() {
 export default function App() {
   const { theme, setTheme, data } = useTheme()
 
+  // Force ocean for now as requested
+  useEffect(() => {
+    if (theme !== 'ocean') setTheme('ocean')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -181,10 +185,10 @@ export default function App() {
       <header className="relative z-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/80 shadow ${data.card}`}>
-              <span className="h-3 w-3 rounded-full bg-gradient-to-tr from-black/80 to-black/40" />
+            <span className={`inline-flex items-center gap-2 rounded-lg bg-white/80 px-2 py-1 shadow ${data.card}`}>
+              <MeghamSysLogo className="h-8 w-8" />
+              <span className="hidden sm:inline">MeghamSys</span>
             </span>
-            <span>Flames • Blue</span>
           </Link>
 
           <div className="flex items-center gap-2">
@@ -214,8 +218,8 @@ export default function App() {
                 <a href="#contact" className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-white ${data.button} focus:outline-none ${data.ring}`}>
                   <Send className="h-4 w-4" /> Start a conversation
                 </a>
-                <a href="#services" className="inline-flex items-center gap-2 rounded-md border border-black/5 bg-white/70 px-4 py-2 text-slate-800 shadow-sm backdrop-blur hover:bg-white/90">
-                  Explore services
+                <a href="#ai" className="inline-flex items-center gap-2 rounded-md border border-black/5 bg-white/70 px-4 py-2 text-slate-800 shadow-sm backdrop-blur hover:bg-white/90">
+                  Explore AI workflows
                 </a>
               </div>
               <div className={`mt-6 text-sm ${data.accent}`}>Trusted by builders across regulated industries</div>
@@ -253,6 +257,30 @@ export default function App() {
                 </div>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Workflows Gallery */}
+      <section id="ai" className="relative z-10">
+        <div className="mx-auto max-w-6xl px-6 py-8">
+          <div className="flex items-end justify-between">
+            <h2 className="text-2xl font-bold">AI Workflows that feel promising</h2>
+            <p className={`text-sm ${data.accent}`}>Ocean theme visuals</p>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <IllustrationCard title="LLM + RAG Pipeline" description="Search, retrieve, and ground answers with your data." data={data}>
+              <RagPipelineSVG />
+            </IllustrationCard>
+
+            <IllustrationCard title="Predictive Maintenance" description="Sensor streams → feature store → anomaly alerts." data={data}>
+              <PredictiveSVG />
+            </IllustrationCard>
+
+            <IllustrationCard title="Chat Automation" description="Multi-step agent orchestrates tasks and approvals." data={data}>
+              <ChatAgentSVG />
+            </IllustrationCard>
           </div>
         </div>
       </section>
@@ -482,7 +510,10 @@ export default function App() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-black/5 bg-white/60 py-6 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 sm:flex-row">
-          <div className="text-sm text-slate-600">© {new Date().getFullYear()} Flames • Blue</div>
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <MeghamSysLogo className="h-5 w-5" />
+            <span>© {new Date().getFullYear()} MeghamSys • Cloud Systems</span>
+          </div>
           <div className="text-sm text-slate-600">Built with FastAPI, React, and Tailwind</div>
         </div>
       </footer>
@@ -534,5 +565,129 @@ function Spinner() {
         strokeLinecap="round"
       />
     </motion.svg>
+  )
+}
+
+function IllustrationCard({ title, description, data, children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.4 }}
+      whileHover={{ y: -6, scale: 1.01 }}
+      className={`rounded-2xl border border-black/5 bg-white/80 p-5 shadow-sm backdrop-blur ${data.card}`}
+    >
+      <div className="aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-white to-white/60">
+        <div className="h-full w-full">
+          {children}
+        </div>
+      </div>
+      <div className="mt-3 font-semibold">{title}</div>
+      <div className="text-sm text-slate-600">{description}</div>
+    </motion.div>
+  )
+}
+
+// Simple ocean-themed SVG illustrations
+function RagPipelineSVG() {
+  return (
+    <svg viewBox="0 0 400 300" className="h-full w-full">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.9" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="400" height="300" fill="url(#g1)" opacity="0.08" />
+      <g stroke="#0ea5e9" strokeWidth="2" fill="none">
+        <rect x="30" y="120" width="90" height="60" rx="10" fill="#e6f9ff" />
+        <rect x="155" y="120" width="90" height="60" rx="10" fill="#e6f9ff" />
+        <rect x="280" y="120" width="90" height="60" rx="10" fill="#e6f9ff" />
+        <path d="M120 150 H155" />
+        <path d="M245 150 H280" />
+        <text x="75" y="155" textAnchor="middle" fontSize="12" fill="#0369a1">Query</text>
+        <text x="200" y="155" textAnchor="middle" fontSize="12" fill="#0369a1">Retrieve</text>
+        <text x="325" y="155" textAnchor="middle" fontSize="12" fill="#0369a1">Answer</text>
+      </g>
+      <g>
+        <circle cx="75" cy="80" r="8" fill="#22d3ee" />
+        <circle cx="200" cy="220" r="6" fill="#06b6d4" />
+        <circle cx="325" cy="60" r="10" fill="#0891b2" />
+      </g>
+    </svg>
+  )
+}
+
+function PredictiveSVG() {
+  return (
+    <svg viewBox="0 0 400 300" className="h-full w-full">
+      <rect x="0" y="0" width="400" height="300" fill="#0ea5e9" opacity="0.06" />
+      <g stroke="#06b6d4" strokeWidth="2" fill="none">
+        <polyline points="30,220 80,180 130,200 180,140 230,160 280,110 330,130 370,90" />
+        <line x1="30" y1="240" x2="370" y2="240" stroke="#94a3b8" strokeDasharray="4 4" />
+      </g>
+      <g fill="#22d3ee">
+        <circle cx="80" cy="180" r="5" />
+        <circle cx="180" cy="140" r="5" />
+        <circle cx="280" cy="110" r="5" />
+        <circle cx="370" cy="90" r="5" />
+      </g>
+    </svg>
+  )
+}
+
+function ChatAgentSVG() {
+  return (
+    <svg viewBox="0 0 400 300" className="h-full w-full">
+      <rect x="0" y="0" width="400" height="300" fill="#06b6d4" opacity="0.06" />
+      <g>
+        <rect x="40" y="60" width="130" height="70" rx="12" fill="#e0f7ff" stroke="#06b6d4" />
+        <rect x="230" y="60" width="130" height="70" rx="12" fill="#e0f7ff" stroke="#06b6d4" />
+        <rect x="135" y="170" width="130" height="70" rx="12" fill="#e0f7ff" stroke="#06b6d4" />
+        <path d="M170 130 L230 130" stroke="#0ea5e9" strokeWidth="2" />
+        <path d="M170 130 C170 180, 230 180, 230 180" stroke="#0ea5e9" strokeWidth="2" fill="none" />
+        <path d="M270 130 C270 180, 230 180, 230 180" stroke="#0ea5e9" strokeWidth="2" fill="none" />
+        <text x="105" y="100" textAnchor="middle" fontSize="12" fill="#0369a1">User</text>
+        <text x="295" y="100" textAnchor="middle" fontSize="12" fill="#0369a1">Tools</text>
+        <text x="200" y="210" textAnchor="middle" fontSize="12" fill="#0369a1">Agent</text>
+      </g>
+    </svg>
+  )
+}
+
+// MeghamSys (Cloud Systems) logo: cloud + nodes + wordmark
+function MeghamSysLogo({ className = '' }) {
+  return (
+    <svg viewBox="0 0 200 200" className={className} aria-label="MeghamSys logo">
+      <defs>
+        <linearGradient id="ms-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#0ea5e9" />
+        </linearGradient>
+        <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2"/>
+        </filter>
+      </defs>
+      {/* Cloud */}
+      <g fill="url(#ms-g)" stroke="#0284c7" strokeWidth="2">
+        <path d="M60 110c-14 0-26-10-26-24s12-24 26-24c3-12 16-22 31-22 18 0 33 12 35 28 12-2 24 7 24 19 0 13-11 23-25 23H60z" opacity="0.9" />
+      </g>
+      {/* Nodes */}
+      <g fill="#22d3ee">
+        <circle cx="75" cy="70" r="5" />
+        <circle cx="120" cy="55" r="5" />
+        <circle cx="145" cy="90" r="5" />
+      </g>
+      <g stroke="#0ea5e9" strokeWidth="2">
+        <line x1="75" y1="70" x2="120" y2="55" />
+        <line x1="120" y1="55" x2="145" y2="90" />
+        <line x1="75" y1="70" x2="145" y2="90" />
+      </g>
+      {/* Wordmark M */}
+      <g fill="none" stroke="url(#ms-g)" strokeWidth="10" strokeLinecap="round" filter="url(#soft)">
+        <path d="M40 140 L60 90 L80 120 L100 80 L120 130" />
+      </g>
+    </svg>
   )
 }
