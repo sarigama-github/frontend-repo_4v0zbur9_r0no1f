@@ -1,152 +1,538 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Wrench,
+  Workflow,
+  Bot,
+  KanbanSquare,
+  Factory,
+  Stethoscope,
+  Sun,
+  Moon,
+  Palette,
+  Send,
+  CheckCircle2,
+} from 'lucide-react'
 
-const servicesList = [
-  { title: 'Systems Integrations', desc: 'Connect ERPs, MES, EHR/EMR, CRMs and shop-floor systems with robust, secure pipelines.' },
-  { title: 'Project Management Apps', desc: 'Custom dashboards, workflows, and role-based portals for execution and governance.' },
-  { title: 'AI Workflows & Automations', desc: 'Orchestrate LLMs, RPA, ETL and APIs to automate repetitive tasks and insights.' },
-  { title: 'Custom Chatbots', desc: 'Domain-tuned assistants for manufacturing and healthcare use cases.' },
+const THEMES = {
+  ocean: {
+    name: 'Ocean',
+    bg: 'from-sky-50 via-blue-50 to-cyan-100',
+    heroGlow: 'bg-cyan-400/30',
+    card: 'hover:border-cyan-300/60 hover:shadow-cyan-200/50',
+    accent: 'text-cyan-700',
+    button: 'bg-cyan-600 hover:bg-cyan-700',
+    ring: 'focus:ring-cyan-500/40',
+  },
+  violet: {
+    name: 'Violet',
+    bg: 'from-fuchsia-50 via-purple-50 to-indigo-100',
+    heroGlow: 'bg-fuchsia-400/30',
+    card: 'hover:border-fuchsia-300/60 hover:shadow-fuchsia-200/50',
+    accent: 'text-fuchsia-700',
+    button: 'bg-fuchsia-600 hover:bg-fuchsia-700',
+    ring: 'focus:ring-fuchsia-500/40',
+  },
+  sunset: {
+    name: 'Sunset',
+    bg: 'from-rose-50 via-orange-50 to-amber-100',
+    heroGlow: 'bg-amber-400/30',
+    card: 'hover:border-amber-300/60 hover:shadow-amber-200/50',
+    accent: 'text-orange-700',
+    button: 'bg-orange-600 hover:bg-orange-700',
+    ring: 'focus:ring-orange-500/40',
+  },
+  slate: {
+    name: 'Slate',
+    bg: 'from-slate-50 via-slate-100 to-zinc-100',
+    heroGlow: 'bg-slate-400/20',
+    card: 'hover:border-slate-300/60 hover:shadow-slate-200/50',
+    accent: 'text-slate-700',
+    button: 'bg-slate-800 hover:bg-slate-900',
+    ring: 'focus:ring-slate-500/40',
+  },
+}
+
+const SERVICES = [
+  {
+    icon: Wrench,
+    title: 'Systems Integrations',
+    desc: 'Connect ERPs, MES, LIMS, and devices for real-time data flow.',
+  },
+  {
+    icon: KanbanSquare,
+    title: 'Project Management Apps',
+    desc: 'Custom workflows, dashboards, and role-based operations.',
+  },
+  {
+    icon: Workflow,
+    title: 'AI Workflows & Automations',
+    desc: 'Predictive, rules-driven, and LLM-powered automations.',
+  },
+  {
+    icon: Bot,
+    title: 'Custom Chatbots',
+    desc: 'Domain-trained assistants for teams and customers.',
+  },
 ]
 
-const industries = [
-  { title: 'Manufacturing', points: ['ERP/MES integrations', 'Predictive maintenance', 'Quality automation'] },
-  { title: 'Healthcare', points: ['EHR/EMR integrations', 'Clinical workflows', 'Secure data handling (HIPAA)'] },
+const INDUSTRIES = [
+  {
+    icon: Factory,
+    title: 'Manufacturing',
+    bullets: [
+      'ERP/MES integrations',
+      'Predictive maintenance',
+      'Quality automation',
+    ],
+  },
+  {
+    icon: Stethoscope,
+    title: 'Healthcare',
+    bullets: [
+      'EHR/EMR integrations',
+      'Clinical workflows',
+      'HIPAA-ready foundations',
+    ],
+  },
 ]
 
-function App() {
+function useTheme() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'ocean')
+  useEffect(() => {
+    localStorage.setItem('theme', theme)
+  }, [theme])
+  const data = useMemo(() => THEMES[theme], [theme])
+  return { theme, setTheme, data }
+}
+
+export default function App() {
+  const { theme, setTheme, data } = useTheme()
+
   const [form, setForm] = useState({
-    name: '', email: '', company: '', industry: 'Manufacturing',
-    services: [], message: '', budget: '', timeline: '', source: 'Website'
+    name: '',
+    email: '',
+    company: '',
+    industry: 'Manufacturing',
+    services: [],
+    budget: '',
+    timeline: '',
+    message: '',
   })
-  const [status, setStatus] = useState({ state: 'idle', msg: '' })
+  const [status, setStatus] = useState('idle') // idle | loading | success | error
+  const [error, setError] = useState('')
+
   const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
-  const toggleService = (s) => {
+  const onToggleService = (title) => {
     setForm((f) => {
-      const exists = f.services.includes(s)
-      const services = exists ? f.services.filter(x => x !== s) : [...f.services, s]
-      return { ...f, services }
+      const s = new Set(f.services)
+      if (s.has(title)) s.delete(title)
+      else s.add(title)
+      return { ...f, services: Array.from(s) }
     })
   }
 
-  const submit = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault()
-    setStatus({ state: 'loading', msg: 'Submitting...' })
+    setStatus('loading')
+    setError('')
     try {
+      const payload = {
+        ...form,
+        source: 'website',
+      }
       const res = await fetch(`${backend}/api/inquiries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-      const data = await res.json()
-      setStatus({ state: 'success', msg: 'Thanks! We will reach out shortly.' })
-      setForm({ name: '', email: '', company: '', industry: 'Manufacturing', services: [], message: '', budget: '', timeline: '', source: 'Website' })
+      setStatus('success')
+      setForm({
+        name: '', email: '', company: '', industry: 'Manufacturing', services: [], budget: '', timeline: '', message: '',
+      })
     } catch (err) {
-      setStatus({ state: 'error', msg: err.message })
+      setStatus('error')
+      setError(err.message || 'Something went wrong')
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <header className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-blue-600 text-white grid place-items-center font-bold">FB</div>
-          <div>
-            <p className="text-lg font-semibold text-slate-900">Flames.Blue</p>
-            <p className="text-xs text-slate-500">Integrations • PM Apps • AI Workflows • Chatbots</p>
+    <div className={`min-h-screen bg-gradient-to-br ${data.bg} text-slate-800`}>
+      {/* Animated background blobs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <motion.div
+          aria-hidden
+          className={`absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl ${data.heroGlow}`}
+          animate={{ x: [0, 40, -20, 0], y: [0, -20, 20, 0] }}
+          transition={{ repeat: Infinity, duration: 18, ease: 'easeInOut' }}
+        />
+        <motion.div
+          aria-hidden
+          className={`absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl ${data.heroGlow}`}
+          animate={{ x: [0, -30, 10, 0], y: [0, 25, -15, 0] }}
+          transition={{ repeat: Infinity, duration: 22, ease: 'easeInOut' }}
+        />
+      </div>
+
+      {/* Nav */}
+      <header className="relative z-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
+            <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/80 shadow ${data.card}`}>
+              <span className="h-3 w-3 rounded-full bg-gradient-to-tr from-black/80 to-black/40" />
+            </span>
+            <span>Flames • Blue</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <ThemeSelector theme={theme} setTheme={setTheme} />
+            <Link
+              to="/test"
+              className="rounded-md border border-black/5 bg-white/70 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur hover:bg-white/90"
+            >
+              Check backend
+            </Link>
           </div>
         </div>
-        <a href="/test" className="text-sm text-blue-700 hover:underline">Check backend</a>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6">
-        <section className="py-10 md:py-16 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">Software for Manufacturing & Healthcare</h1>
-            <p className="mt-4 text-slate-600 text-lg">We build integrations, project management apps, AI workflows, automations, and custom chatbots tailored to regulated and industrial environments.</p>
-            <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {servicesList.map(s => (
-                <li key={s.title} className="bg-white/80 backdrop-blur rounded-lg p-4 shadow-sm border border-slate-100">
-                  <p className="font-semibold text-slate-900">{s.title}</p>
-                  <p className="text-sm text-slate-600 mt-1">{s.desc}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-6">
-            <h3 className="text-xl font-semibold text-slate-900">Start a conversation</h3>
-            <p className="text-sm text-slate-600 mb-4">Tell us about your project. We’ll follow up within 1 business day.</p>
-            <form onSubmit={submit} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Name" className="px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="Email" className="px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      {/* Hero */}
+      <section className="relative z-10">
+        <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+          <div className="grid items-center gap-10 md:grid-cols-2">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
+                Build reliable software for Manufacturing and Healthcare
+              </h1>
+              <p className="mt-4 text-lg text-slate-600">
+                Integrations, project management apps, AI workflows, and custom chatbots — delivered with compliance and reliability.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <a href="#contact" className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-white ${data.button} focus:outline-none ${data.ring}`}>
+                  <Send className="h-4 w-4" /> Start a conversation
+                </a>
+                <a href="#services" className="inline-flex items-center gap-2 rounded-md border border-black/5 bg-white/70 px-4 py-2 text-slate-800 shadow-sm backdrop-blur hover:bg-white/90">
+                  Explore services
+                </a>
               </div>
-              <input value={form.company} onChange={e=>setForm({...form,company:e.target.value})} placeholder="Company" className="w-full px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <div className="grid grid-cols-2 gap-3">
-                <select value={form.industry} onChange={e=>setForm({...form,industry:e.target.value})} className="px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option>Manufacturing</option>
-                  <option>Healthcare</option>
-                  <option>Other</option>
-                </select>
-                <select value={form.timeline} onChange={e=>setForm({...form,timeline:e.target.value})} className="px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Timeline</option>
-                  <option>ASAP</option>
-                  <option>1-3 months</option>
-                  <option>3-6 months</option>
-                </select>
-              </div>
-              <div>
-                <p className="text-sm text-slate-700 mb-1">Services needed</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {servicesList.map(s => (
-                    <label key={s.title} className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer ${form.services.includes(s.title) ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}>
-                      <input type="checkbox" checked={form.services.includes(s.title)} onChange={()=>toggleService(s.title)} />
-                      <span className="text-sm">{s.title}</span>
-                    </label>
-                  ))}
+              <div className={`mt-6 text-sm ${data.accent}`}>Trusted by builders across regulated industries</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="relative"
+            >
+              <div className="relative">
+                <motion.div
+                  className="absolute -inset-6 rounded-3xl bg-white/30 blur-xl"
+                  animate={{ opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 4 }}
+                />
+                <div className="relative rounded-3xl border border-black/5 bg-white/80 p-6 shadow-xl backdrop-blur">
+                  <div className="grid grid-cols-2 gap-4">
+                    {SERVICES.map((s, i) => (
+                      <motion.div
+                        key={s.title}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: i * 0.08 }}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        className={`group rounded-xl border border-transparent bg-white/70 p-4 shadow-sm backdrop-blur transition-all ${data.card}`}
+                      >
+                        <s.icon className="h-6 w-6 text-slate-700" />
+                        <div className="mt-2 font-semibold">{s.title}</div>
+                        <div className="text-sm text-slate-600">{s.desc}</div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <textarea value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Project details" rows={4} className="w-full px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <div className="grid grid-cols-2 gap-3">
-                <select value={form.budget} onChange={e=>setForm({...form,budget:e.target.value})} className="px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Budget</option>
-                  <option>Under $10k</option>
-                  <option>$10k–$50k</option>
-                  <option>$50k–$200k</option>
-                  <option>$200k+</option>
-                </select>
-                <input value={form.source} onChange={e=>setForm({...form,source:e.target.value})} placeholder="How did you hear about us?" className="px-3 py-2 rounded border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <button type="submit" disabled={status.state==='loading'} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">
-                {status.state==='loading' ? 'Sending...' : 'Request a proposal'}
-              </button>
-              {status.state !== 'idle' && (
-                <p className={`text-sm ${status.state==='success' ? 'text-green-600' : status.state==='error' ? 'text-red-600' : 'text-slate-600'}`}>{status.msg}</p>
-              )}
-            </form>
+            </motion.div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="py-10 md:py-16">
-          <h2 className="text-2xl font-bold text-slate-900">Industries</h2>
-          <div className="mt-6 grid md:grid-cols-2 gap-4">
-            {industries.map(i => (
-              <div key={i.title} className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
-                <p className="font-semibold text-slate-900">{i.title}</p>
-                <ul className="list-disc list-inside text-slate-600 mt-2 space-y-1">
-                  {i.points.map(p => <li key={p}>{p}</li>)}
-                </ul>
-              </div>
+      {/* Services */}
+      <section id="services" className="relative z-10">
+        <div className="mx-auto max-w-6xl px-6 py-8">
+          <div className="flex items-end justify-between">
+            <h2 className="text-2xl font-bold">Services</h2>
+            <p className={`text-sm ${data.accent}`}>From discovery to deployment</p>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICES.map((s, i) => (
+              <motion.div
+                key={s.title}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                whileHover={{ y: -6, rotate: [-0.2, 0.2, 0] }}
+                className={`rounded-xl border border-black/5 bg-white/70 p-5 shadow-sm backdrop-blur transition-all ${data.card}`}
+              >
+                <s.icon className="h-6 w-6 text-slate-700" />
+                <div className="mt-2 font-semibold">{s.title}</div>
+                <div className="text-sm text-slate-600">{s.desc}</div>
+              </motion.div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <footer className="py-10 text-center text-sm text-slate-500">
-          © {new Date().getFullYear()} Flames.Blue — All rights reserved.
-        </footer>
-      </main>
+      {/* Industries */}
+      <section className="relative z-10">
+        <div className="mx-auto max-w-6xl px-6 py-8">
+          <h2 className="text-2xl font-bold">Industries</h2>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {INDUSTRIES.map((ind, i) => (
+              <motion.div
+                key={ind.title}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                className={`rounded-2xl border border-black/5 bg-white/70 p-6 shadow-sm backdrop-blur ${data.card}`}
+              >
+                <div className="flex items-center gap-3">
+                  <ind.icon className="h-6 w-6 text-slate-700" />
+                  <div className="font-semibold">{ind.title}</div>
+                </div>
+                <ul className="mt-3 space-y-1 text-sm text-slate-600">
+                  {ind.bullets.map((b) => (
+                    <li key={b}>• {b}</li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" className="relative z-10">
+        <div className="mx-auto max-w-6xl px-6 py-12">
+          <div className="grid gap-8 md:grid-cols-2">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
+              <h2 className="text-2xl font-bold">Start a conversation</h2>
+              <p className="mt-2 text-slate-600">
+                Tell us a bit about your goals. We’ll reply within one business day.
+              </p>
+              <div className={`mt-4 text-sm ${data.accent}`}>We never share your data.</div>
+
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                {SERVICES.map((s) => (
+                  <button
+                    key={s.title}
+                    type="button"
+                    onClick={() => onToggleService(s.title)}
+                    className={`rounded-lg border border-black/5 bg-white/70 px-3 py-2 text-left text-sm shadow-sm backdrop-blur transition-all ${data.card} ${form.services.includes(s.title) ? 'ring-2 ring-black/10' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <s.icon className="h-4 w-4 text-slate-700" />
+                      <span>{s.title}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.form
+              onSubmit={onSubmit}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              className={`rounded-2xl border border-black/5 bg-white/80 p-6 shadow-xl backdrop-blur ${data.card}`}
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium">Name</label>
+                  <input
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <input
+                    required
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Company</label>
+                  <input
+                    value={form.company}
+                    onChange={(e) => setForm({ ...form, company: e.target.value })}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Industry</label>
+                  <select
+                    value={form.industry}
+                    onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                  >
+                    {INDUSTRIES.map((i) => (
+                      <option key={i.title} value={i.title}>{i.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Budget</label>
+                  <select
+                    value={form.budget}
+                    onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                  >
+                    <option value="">Select…</option>
+                    <option value="< $10k">Less than $10k</option>
+                    <option value="$10k–$50k">$10k–$50k</option>
+                    <option value="> $50k">More than $50k</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Timeline</label>
+                  <select
+                    value={form.timeline}
+                    onChange={(e) => setForm({ ...form, timeline: e.target.value })}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                  >
+                    <option value="">Select…</option>
+                    <option value="ASAP">ASAP</option>
+                    <option value="This quarter">This quarter</option>
+                    <option value="This year">This year</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium">Message</label>
+                  <textarea
+                    value={form.message}
+                    onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    rows={4}
+                    className={`mt-1 w-full rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm shadow-sm outline-none transition ${data.ring}`}
+                    placeholder="What would you like to build?"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-white ${data.button} disabled:opacity-60`}
+                >
+                  <AnimatePresence initial={false} mode="wait">
+                    {status === 'loading' ? (
+                      <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Spinner /> Sending
+                      </motion.span>
+                    ) : status === 'success' ? (
+                      <motion.span
+                        key="success"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4" /> Sent
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="idle"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Send className="h-4 w-4" /> Send
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </button>
+                {status === 'error' && (
+                  <div className="text-sm text-rose-600">{error}</div>
+                )}
+              </div>
+            </motion.form>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-black/5 bg-white/60 py-6 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 sm:flex-row">
+          <div className="text-sm text-slate-600">© {new Date().getFullYear()} Flames • Blue</div>
+          <div className="text-sm text-slate-600">Built with FastAPI, React, and Tailwind</div>
+        </div>
+      </footer>
     </div>
   )
 }
 
-export default App
+function ThemeSelector({ theme, setTheme }) {
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-black/5 bg-white/70 p-1 shadow-sm backdrop-blur">
+      {Object.entries(THEMES).map(([key, t]) => (
+        <button
+          key={key}
+          onClick={() => setTheme(key)}
+          className={`inline-flex items-center gap-1 rounded px-2 py-1 text-sm transition ${theme === key ? 'bg-black/5' : ''}`}
+          title={t.name}
+        >
+          <Palette className="h-4 w-4" />
+          <span className="hidden sm:inline">{t.name}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Spinner() {
+  return (
+    <motion.svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      initial={{ rotate: 0 }}
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeOpacity="0.2"
+        strokeWidth="4"
+      />
+      <path
+        d="M22 12a10 10 0 0 0-10-10"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+    </motion.svg>
+  )
+}
